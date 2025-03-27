@@ -20,41 +20,27 @@ def upload_and_remove_bg(request):
             image_path = image_instance.image.path
             # 使用 rembg 去除背景
             input_image = PilImage.open(image_path)
-            print('input mode:', input_image.mode)
             if input_image.mode in ('RGBA', 'LA'):
-                background = PilImage.new('RGB', input_image.size, (255, 255, 255))  # 白色背景
+                background = Image.new('RGB', input_image.size, (255, 255, 255))  # 白色背景
                 background.paste(input_image, mask=input_image.split()[3])  # 使用透明通道作为蒙版
                 input_image = background
-
+            
             output_image = remove(input_image)
-            print('output mode:', output_image.mode)  # 检查输出图像的模式
-
-            # 确保输出路径存在
             output_path = os.path.join('media', 'output', os.path.basename(image_path))
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
-            # 检查输出图像模式并转换为 RGB（如果需要）
-            if output_image.mode in ('RGBA', 'LA'):
-                background = PilImage.new('RGB', output_image.size, (255, 255, 255))  # 白色背景
-                background.paste(output_image, mask=output_image.split()[3])  # 使用透明通道作为蒙版
-                output_image = background
-
-            # 保存输出图像
+            # 需要改变jpg、jpeg保存的格式
             output_extension = Path(output_path).suffix.lower()
             if output_extension in ['.jpg', '.jpeg']:
-                output_image.save(output_path, 'JPEG')
+                output_path = output_path.split('.')[0]+'.JPEG'
             else:
-                output_image.save(output_path, 'PNG')  # 默认保存为 PNG
-
+                output_path = output_path.split('.')[0]+'.PNG'
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            output_image.save(output_path)
             return HttpResponse(f"抠图完成！结果保存在 {output_path}")
     else:
         form = ImageUploadForm()
     return render(request, 'koutu/upload.html', {'form': form})
 
-            
 
-
-# 使用Removebg进行抠图(去除背景)，需要API，保留不用
 def koutu_(request):
     if request.method == 'POST':
         form = ImageUploadForm(request.POST, request.FILES)
